@@ -1,4 +1,3 @@
-
 import streamlit as st
 import itertools
 import pandas as pd
@@ -112,7 +111,6 @@ if st.button("🚀 Calcular todos los sistemas y Value Betting", type="primary",
     
     for name, combos in sys_list:
         metrics = calculate_metrics(odds, probs, total_stake, combos)
-        # Break-even seguro
         break_even = next((k for k in range(1, n+1) if metrics["scenarios"][k]["Mín. neto"] >= 0), "Ninguno")
         comparison.append({
             "Sistema": name,
@@ -147,7 +145,6 @@ if st.button("🚀 Calcular todos los sistemas y Value Betting", type="primary",
             })
         df_value = pd.DataFrame(data)
         
-        # ESTILADO CORREGIDO (esta era la línea que fallaba)
         def style_edge(val):
             if isinstance(val, str) and '%' in val:
                 try:
@@ -184,6 +181,7 @@ if st.button("🚀 Calcular todos los sistemas y Value Betting", type="primary",
         st.subheader("Escenarios según número de aciertos")
         df_scen = pd.DataFrame(best["metrics"]["scenarios"])
         st.dataframe(df_scen, use_container_width=True)
-        st.metric("Profit si TODOS aciertas", f"{best['all_profit_pct']}%")
+        # ←←← LÍNEA CORREGIDA AQUÍ
+        st.metric("Profit si TODOS aciertas", f"{best['metrics']['all_profit_pct']}%")
 
     st.balloons()
