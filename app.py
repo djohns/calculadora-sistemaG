@@ -1,10 +1,11 @@
+
 import streamlit as st
 import itertools
 import pandas as pd
 
 st.set_page_config(page_title="Calculadora Sistemas + Value Betting", layout="wide")
 st.title("🧮 Calculadora de Apuestas de Sistema + Value Betting")
-st.markdown("**Versión web** – Usa tu probabilidad estimada real y encuentra el sistema más rentable")
+st.markdown("**Versión web** – Usa tu probabilidad estimada real y encuentra el sistema más rentable para Betano")
 
 # --- INPUTS EN SIDEBAR ---
 with st.sidebar:
@@ -28,7 +29,6 @@ for i in range(n):
         probs.append(prob_pct / 100)
 
 if st.button("🚀 Calcular todos los sistemas y Value Betting", type="primary", use_container_width=True):
-    # --- LÓGICA (igual que antes pero optimizada para Streamlit) ---
     def calculate_product(values):
         prod = 1.0
         for v in values:
@@ -112,6 +112,7 @@ if st.button("🚀 Calcular todos los sistemas y Value Betting", type="primary",
     
     for name, combos in sys_list:
         metrics = calculate_metrics(odds, probs, total_stake, combos)
+        # Break-even seguro
         break_even = next((k for k in range(1, n+1) if metrics["scenarios"][k]["Mín. neto"] >= 0), "Ninguno")
         comparison.append({
             "Sistema": name,
@@ -124,11 +125,11 @@ if st.button("🚀 Calcular todos los sistemas y Value Betting", type="primary",
             "combos": combos
         })
     
-    # Ordenar por mejor EV y menor riesgo
+    # Ordenar: mejor EV primero, luego menor riesgo
     comparison.sort(key=lambda x: (-x["EV Total"], x["Break-even mín."] if isinstance(x["Break-even mín."], int) else 999))
     best = comparison[0]
 
-    # --- MOSTRAR RESULTADOS ---
+    # --- PESTAÑAS ---
     tab1, tab2, tab3, tab4 = st.tabs(["📊 Value en Singles", "⚔️ Comparación de Sistemas", "✅ Recomendado", "📈 Escenarios"])
 
     with tab1:
@@ -145,7 +146,19 @@ if st.button("🚀 Calcular todos los sistemas y Value Betting", type="primary",
                 "Edge %": f"{edge:+.1f}%"
             })
         df_value = pd.DataFrame(data)
-        st.dataframe(df_value.style.apply(lambda x: ["color: green" if float(x["Edge %"][:-1]) > 0 else "color: red" for x in x], axis=1), use_container_width=True)
+        
+        # ESTILADO CORREGIDO (esta era la línea que fallaba)
+        def style_edge(val):
+            if isinstance(val, str) and '%' in val:
+                try:
+                    edge_val = float(val.strip('%'))
+                    return f'color: {"green" if edge_val > 0 else "red"}'
+                except:
+                    return ''
+            return ''
+        
+        df_value_styled = df_value.style.map(style_edge, subset=["Edge %"])
+        st.dataframe(df_value_styled, use_container_width=True)
 
     with tab2:
         st.subheader("Comparación completa de sistemas")
@@ -165,7 +178,7 @@ if st.button("🚀 Calcular todos los sistemas y Value Betting", type="primary",
         if st.button("📋 Copiar toda la distribución al portapapeles"):
             text = "\n".join([f"Comb {i+1}: Sel. {row['Combinación']} → Cuota {row['Cuota']} | {best['metrics']['stake_per']} CLP" for i, row in enumerate(best["metrics"]["combo_details"])])
             st.code(text)
-            st.success("¡Copiado! Pégalo en Betano")
+            st.success("¡Copiado! Pégalo directamente en Betano")
 
     with tab4:
         st.subheader("Escenarios según número de aciertos")
